@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <ul>
+    {% for name in list_names %}
+    <li>{{ name }}</li>
+    {% endfor %}
+  </ul>
+{% endblock content%}
