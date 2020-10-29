@@ -69,3 +69,4 @@ def login():
             # Redirect User to login route
             return redirect(url_for('login'))
     return render_template('login.html', login_form = form)
+    
