@@ -5,7 +5,7 @@ from chicodes_blog_app import app, db
 from flask import render_template, request, redirect, url_for 
 
 # import our form(s)
-from chicodes_blog_app.forms import UserInfoForm, LoginForm
+from chicodes_blog_app.forms import UserInfoForm, LoginForm, PostForm
 
 # import of Our Model(s)
 from chicodes_blog_app.models import User, Post, check_password_hash
@@ -17,7 +17,8 @@ from flask_login import login_required, login_user, current_user, logout_user
 # Default Home Route 
 @app.route('/')
 def home():
-    return render_template('home.html')
+    posts = Post.query.all()
+    return render_template('home.html', user_posts = posts)
 
 @app.route('/test')
 def testRoute():
@@ -69,4 +70,63 @@ def login():
             # Redirect User to login route
             return redirect(url_for('login'))
     return render_template('login.html', login_form = form)
-    
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('home'))
+
+# Creation of posts route
+@app.route('/posts', methods = ['GET', 'POST'])
+@login_required
+def posts():
+    form = PostForm()
+    if request.method == 'POST' and form.validate():
+        title = form.title.data
+        content = form.content.data
+        user_id = current_user.id 
+        post = Post(title, content,user_id)
+
+        db.session.add(post)
+
+        db.session.commit()
+        return redirect(url_for('home'))
+    return render_template('posts.html', post_form = form)
+
+# post detail route to display info about a post
+@app.route('/posts/<int:post_id>')
+@login_required
+def post_detail(post_id):
+    post = Post.query.get_or_404(post_id)
+    return render_template('post_detail.html', post=post)
+
+@app.route('/posts/update/<int:post_id>', methods=['GET', 'POST'])
+@login_required
+def post_update(post_id):
+    post = Post.query.get_or_404(post_id)
+    form = PostForm()
+
+    if request.method == 'POST' and form.validate():
+        title = form.title.data 
+        content = form.content.data  
+        user_id = current_user.id 
+
+        # Update the Database with the new Info
+        post.title = title 
+        post.content = content 
+        post.user_id = user_id 
+
+        # Commit the changes to the database
+        db.session.commit()
+        return redirect(url_for('home'))
+    return render_template('post_update.html', update_form=form)
+
+
+@app.route('/posts/delete/<int:post_id>', methods=['GET', 'POST', 'DELETE'])
+@login_required
+def post_delete(post_id):
+    post = Post.query.get_or_404(post_id)
+    db.session.delete(post)
+    db.session.commit()
+    return redirect(url_for('home'))
